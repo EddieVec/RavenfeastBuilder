@@ -36,7 +36,7 @@
     <button id="add-unit-btn">Add Unit</button>
     
     <h3>Warband Composition</h3>
-    <!-- Table header now includes extra columns for unit stats -->
+    <!-- Table header without Traits column -->
     <table id="warband-table">
       <thead>
         <tr>
@@ -49,7 +49,6 @@
           <th>Quantity</th>
           <th>Base Cost</th>
           <th>Abilities</th>
-          <th>Traits</th>
           <th>Total Cost</th>
           <th>Actions</th>
         </tr>
@@ -92,8 +91,7 @@
     <label for="custom-morale-select">Morale:</label>
     <select id="custom-morale-select"></select><br>
     
-    <label for="custom-traits">Traits:</label>
-    <input type="text" id="custom-traits"><br>
+    <!-- The Traits input has been removed -->
     
     <p>Total Cost: <span id="custom-total-cost">0</span> points</p>
     
@@ -113,7 +111,6 @@
           <th>Armor</th>
           <th>Morale</th>
           <th>Cost</th>
-          <th>Traits</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -127,7 +124,7 @@
     /**********************
      * PREDEFINED UNITS
      **********************/
-    // Note: Only the Jarl should have the Leader ability (which is preloaded)
+    // Only the Jarl has the Leader ability (preloaded) and Huskarls have Tough (2).
     const defaultUnits = [
       { id: 'default-1', name: 'Jarl', move: '6"', missile: 0, melee: 5, armor: 5, morale: 5, cost: 75,
         traits: 'Leader, Tough (3)',
@@ -196,7 +193,7 @@
     /**********************
      * ABILITIES DEFINITIONS & DESCRIPTIONS
      **********************/
-    // Note: "Leader" is no longer offered as an optional ability.
+    // "Leader" is no longer offered as an optional ability.
     const abilitiesList = {
       hero:   { name: 'Hero',   cost: 10 },
       mighty: { name: 'Mighty', cost: 5 },
@@ -255,7 +252,7 @@
       tbody.innerHTML = "";
       customUnits.forEach((unit, index) => {
         const tr = document.createElement("tr");
-        ["name", "move", "missile", "melee", "armor", "morale", "cost", "traits"].forEach(prop => {
+        ["name", "move", "missile", "melee", "armor", "morale", "cost"].forEach(prop => {
           const td = document.createElement("td");
           td.textContent = unit[prop];
           tr.appendChild(td);
@@ -301,6 +298,7 @@
         return;
       }
       const newUnit = JSON.parse(JSON.stringify(unit));
+      // Automatically add "Mounted" if move is 10" or more.
       if (parseInt(newUnit.move) >= 10) {
         if (newUnit.traits) {
           if (!newUnit.traits.toLowerCase().includes("mounted"))
@@ -313,7 +311,7 @@
       updateWarbandDisplay();
     }
 
-    // Updated warband display includes extra stat columns.
+    // Updated warband display without the Traits column.
     function updateWarbandDisplay() {
       const tbody = document.querySelector("#warband-table tbody");
       tbody.innerHTML = "";
@@ -378,11 +376,6 @@
         else tdAbilities.textContent = "-";
         tr.appendChild(tdAbilities);
         
-        // Traits
-        let tdTraits = document.createElement("td");
-        tdTraits.textContent = entry.unit.traits;
-        tr.appendChild(tdTraits);
-        
         // Total Cost for this row
         let abilitiesCost = (entry.abilities || []).reduce((sum, a) => sum + a.cost, 0);
         let lineTotal = (entry.unit.cost + abilitiesCost) * entry.quantity;
@@ -421,10 +414,9 @@
       }
     }
 
-    // UPDATED: Remove "Leader" from the optional abilities prompt.
+    // UPDATED: The prompt for adding extra abilities now excludes Leader.
     function addAbilityToEntry(index) {
       const entry = warband[index];
-      // New prompt with only Hero, Mighty, and Tough options
       const choice = prompt("Select ability to add:\n1) Hero (+10 pts)\n2) Mighty (+5 pts)\n3) Tough (extra wounds, cost = 50% of base cost per wound)").trim();
       let ability;
       if (choice === "1")
@@ -547,7 +539,7 @@
       const meleeOpt = JSON.parse(document.getElementById("custom-melee-select").value);
       const armorOpt = JSON.parse(document.getElementById("custom-armor-select").value);
       const moraleOpt = JSON.parse(document.getElementById("custom-morale-select").value);
-      let traits = document.getElementById("custom-traits").value.trim();
+      // Traits input removed – no need to capture this value.
       let totalCost = recalcCustomUnitCost();
       const newId = "custom-" + Date.now();
       const newUnit = {
@@ -559,7 +551,7 @@
         armor: armorOpt.label,
         morale: moraleOpt.label,
         cost: totalCost,
-        traits,
+        // Omit traits property altogether.
         abilities: []
       };
       customUnits.push(newUnit);
@@ -567,7 +559,7 @@
       updateUnitDropdown();
       updateSavedCustomUnitsList();
       document.getElementById("custom-name").value = "";
-      document.getElementById("custom-traits").value = "";
+      // No traits input to clear.
       ["custom-move-select","custom-missile-type","custom-missile-rating","custom-melee-select","custom-armor-select","custom-morale-select"].forEach(id => {
         document.getElementById(id).selectedIndex = 0;
       });
@@ -587,8 +579,8 @@
       doc.text("RavenFeast Army List", 105, y, { align: "center" });
       y += 10;
       doc.setFontSize(12);
-      // Header including all columns
-      let header = "Unit Name | Move | Missile | Melee | Armor | Morale | Quantity | Base Cost | Abilities | Traits | Total Cost";
+      // Header without Traits column.
+      let header = "Unit Name | Move | Missile | Melee | Armor | Morale | Quantity | Base Cost | Abilities | Total Cost";
       doc.text(header, 10, y);
       y += 6;
       let totalPoints = 0;
@@ -599,7 +591,7 @@
         let abilitiesText = (entry.abilities && entry.abilities.length > 0) 
           ? entry.abilities.map(a => `${a.name} (${a.cost})`).join(", ") 
           : "-";
-        let line = `${entry.unit.name} | ${entry.unit.move} | ${entry.unit.missile} | ${entry.unit.melee} | ${entry.unit.armor} | ${entry.unit.morale} | ${entry.quantity} | ${entry.unit.cost} | ${abilitiesText} | ${entry.unit.traits} | ${lineTotal}`;
+        let line = `${entry.unit.name} | ${entry.unit.move} | ${entry.unit.missile} | ${entry.unit.melee} | ${entry.unit.armor} | ${entry.unit.morale} | ${entry.quantity} | ${entry.unit.cost} | ${abilitiesText} | ${lineTotal}`;
         doc.text(line, 10, y);
         y += 6;
         if (y > 280) {
@@ -608,7 +600,7 @@
         }
       });
       doc.text(`Total Points: ${totalPoints}`, 10, y + 6);
-      // Collect unique ability IDs used
+      // Collect unique ability IDs used.
       let abilitiesUsed = new Set();
       warband.forEach(entry => {
         if(entry.abilities && entry.abilities.length > 0){
