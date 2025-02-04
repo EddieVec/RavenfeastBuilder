@@ -36,12 +36,12 @@
     <button id="add-unit-btn">Add Unit</button>
     
     <h3>Warband Composition</h3>
-    <!-- Updated table header with extra columns -->
+    <!-- Updated table header (no Traits column) -->
     <table id="warband-table">
       <thead>
         <tr>
           <th>Unit Name</th>
-          <th>Move</th>
+          <th>Movement</th>
           <th>Missile</th>
           <th>Melee</th>
           <th>Armor</th>
@@ -49,18 +49,17 @@
           <th>Quantity</th>
           <th>Base Cost</th>
           <th>Abilities</th>
-          <th>Traits</th>
           <th>Total Cost</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
-        <!-- Warband entries appear here -->
+        <!-- Warband entries will appear here -->
       </tbody>
     </table>
     <p><strong>Total Points:</strong> <span id="total-points">0</span></p>
     <button id="clear-warband-btn">Clear Warband</button>
-    <!-- NEW: Export button -->
+    <!-- Export button -->
     <button id="export-btn">Export Army List as PDF</button>
   </div>
 
@@ -77,11 +76,11 @@
     <label for="custom-move-select">Movement:</label>
     <select id="custom-move-select"></select><br>
     
+    <!-- Missile now has two selectors -->
     <label for="custom-missile-type">Missile Type:</label>
     <select id="custom-missile-type"></select><br>
-    
-    <label for="custom-missile-rating">Missile Rating:</label>
-    <select id="custom-missile-rating"></select><br>
+    <label for="custom-missile-score">Missile Score:</label>
+    <select id="custom-missile-score"></select><br>
     
     <label for="custom-melee-select">Melee:</label>
     <select id="custom-melee-select"></select><br>
@@ -92,9 +91,7 @@
     <label for="custom-morale-select">Morale:</label>
     <select id="custom-morale-select"></select><br>
     
-    <label for="custom-traits">Traits:</label>
-    <input type="text" id="custom-traits"><br>
-    
+    <!-- Removed Traits input -->
     <p>Total Cost: <span id="custom-total-cost">0</span> points</p>
     
     <button id="save-custom-unit-btn">Save Custom Unit</button>
@@ -103,17 +100,17 @@
   <!-- SECTION 3: SAVED CUSTOM UNITS (with removal option) -->
   <div class="section" id="saved-custom-units-section">
     <h2>Saved Custom Units</h2>
+    <!-- Removed Traits column from saved table -->
     <table id="saved-custom-units-table">
       <thead>
         <tr>
           <th>Name</th>
-          <th>Move</th>
+          <th>Movement</th>
           <th>Missile</th>
           <th>Melee</th>
           <th>Armor</th>
           <th>Morale</th>
           <th>Cost</th>
-          <th>Traits</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -127,71 +124,68 @@
     /**********************
      * PREDEFINED UNITS
      **********************/
-    // Jarls come with Leader and Tough (3); Huskarls come with Tough (2).
-    // Their abilities are preloaded with cost 0 so the unit price remains unchanged.
+    // Predefined units now do not display traits (they already have zero–cost abilities)
     const defaultUnits = [
-      { id: 'default-1', name: 'Jarl', move: '6"', missile: 0, melee: 5, armor: 5, morale: 5, cost: 75,
-        traits: 'Leader, Tough (3)',
+      { id: 'default-1', name: 'Jarl', move: '6"', missile: "0", melee: "5", armor: "5", morale: "5", cost: 75,
         abilities: [ { id: 'leader', name: 'Leader', cost: 0 }, { id: 'tough', name: 'Tough (3)', cost: 0 } ]
       },
-      { id: 'default-2', name: 'Huskarl', move: '6"', missile: 0, melee: 4, armor: 4, morale: 4, cost: 36,
-        traits: 'Tough (2)',
+      { id: 'default-2', name: 'Huskarl', move: '6"', missile: "0", melee: "4", armor: "4", morale: "4", cost: 36,
         abilities: [ { id: 'tough', name: 'Tough (2)', cost: 0 } ]
       },
-      { id: 'default-3', name: 'Berserker', move: '6"', missile: 0, melee: '4 (x2)', armor: 3, morale: 4, cost: 30, traits: '', abilities: [] },
-      { id: 'default-4', name: 'Hirdmen', move: '6"', missile: 0, melee: 3, armor: 3, morale: 3, cost: 18, traits: '', abilities: [] },
-      { id: 'default-5', name: 'Bondi Archer', move: '6"', missile: '2 (18")', melee: 2, armor: 2, morale: 2, cost: 18, traits: '', abilities: [] },
-      { id: 'default-6', name: 'Bondi', move: '6"', missile: 0, melee: 2, armor: 2, morale: 2, cost: 12, traits: '', abilities: [] },
-      { id: 'default-7', name: 'Thrall', move: '8"', missile: '1 (8")', melee: 1, armor: 1, morale: 1, cost: 9, traits: '', abilities: [] }
+      { id: 'default-3', name: 'Berserker', move: '6"', missile: "0", melee: "–", armor: "3", morale: "4", cost: 30, abilities: [] },
+      { id: 'default-4', name: 'Hirdmen', move: '6"', missile: "0", melee: "3", armor: "3", morale: "3", cost: 18, abilities: [] },
+      { id: 'default-5', name: 'Bondi Archer', move: '6"', missile: '2 (18")', melee: "2", armor: "2", morale: "2", cost: 18, abilities: [] },
+      { id: 'default-6', name: 'Bondi', move: '6"', missile: "0", melee: "2", armor: "2", morale: "2", cost: 12, abilities: [] },
+      { id: 'default-7', name: 'Thrall', move: '8"', missile: '1 (8")', melee: "1", armor: "1", morale: "1", cost: 9, abilities: [] }
     ];
 
     /**********************
      * OPEN POINTS ARCHITECTURE OPTIONS
      **********************/
-    const openPointsOptions = {
-      movement: [
-        { label: '14"', rating: 14, cost: 8 },
-        { label: '12"', rating: 12, cost: 6 },
-        { label: '10"', rating: 10, cost: 4 },
-        { label: '8"',  rating: 8,  cost: 2 },
-        { label: '6"',  rating: 6,  cost: 0 }
-      ],
-      missile: [
-        { label: '8', rating: 8, cost: 4 },
-        { label: '6', rating: 6, cost: 3 },
-        { label: '4', rating: 4, cost: 2 },
-        { label: '3', rating: 3, cost: 3 },
-        { label: '2', rating: 2, cost: 1 },
-        { label: '0', rating: 0, cost: 0 }
-      ],
-      melee: [
-        { label: '12', rating: 12, cost: 4 },
-        { label: '9',  rating: 9, cost: 3 },
-        { label: '6',  rating: 6, cost: 2 },
-        { label: '3',  rating: 3, cost: 1 },
-        { label: '4 (custom)', rating: 4, cost: 8 }
-      ],
-      armor: [
-        { label: '5', rating: 5, cost: 10 },
-        { label: '4', rating: 4, cost: 8 },
-        { label: '3', rating: 3, cost: 6 },
-        { label: '2', rating: 2, cost: 4 },
-        { label: '1', rating: 1, cost: 2 }
-      ],
-      morale: [
-        { label: '5', rating: 5, cost: 10 },
-        { label: '4', rating: 4, cost: 8 },
-        { label: '3', rating: 3, cost: 6 },
-        { label: '2', rating: 2, cost: 4 },
-        { label: '1', rating: 1, cost: 2 }
-      ]
-    };
+    const movementOptions = [
+      { label: '14"', rating: 14, cost: 8 },
+      { label: '12"', rating: 12, cost: 6 },
+      { label: '10"', rating: 10, cost: 4 },
+      { label: '8"',  rating: 8, cost: 2 },
+      { label: '6"',  rating: 6, cost: 0 }
+    ];
+    // For missile, we define a separate array:
+    const missileOptions = [
+      { label: '4', score: 4, costBow: 12, costJavelin: 4 },
+      { label: '3', score: 3, costBow: 9, costJavelin: 3 },
+      { label: '2', score: 2, costBow: 6, costJavelin: 2 },
+      { label: '1', score: 1, costBow: 3, costJavelin: 1 },
+      { label: '0', score: 0, costBow: 0, costJavelin: 0 }
+    ];
+    // For melee, use the revised options:
+    const meleeOptions = [
+      { label: '5', rating: 5, cost: 10 },
+      { label: '4', rating: 4, cost: 8 },
+      { label: '3', rating: 3, cost: 6 },
+      { label: '2', rating: 2, cost: 4 },
+      { label: '1', rating: 1, cost: 2 }
+    ];
+    // Armor and Morale (same as melee)
+    const armorOptions = [
+      { label: '5', rating: 5, cost: 10 },
+      { label: '4', rating: 4, cost: 8 },
+      { label: '3', rating: 3, cost: 6 },
+      { label: '2', rating: 2, cost: 4 },
+      { label: '1', rating: 1, cost: 2 }
+    ];
+    const moraleOptions = [
+      { label: '5', rating: 5, cost: 10 },
+      { label: '4', rating: 4, cost: 8 },
+      { label: '3', rating: 3, cost: 6 },
+      { label: '2', rating: 2, cost: 4 },
+      { label: '1', rating: 1, cost: 2 }
+    ];
 
     // Missile type options (including "No Ranged Weapon")
-    const missileTypes = [
-      { id: 'none', name: 'No Ranged Weapon', costModifier: 0 },
-      { id: 'javelin', name: 'Javelin (8")', costModifier: 0 },
-      { id: 'bow', name: 'Bow (18")', costModifier: 6 }
+    const missileTypeOptions = [
+      { id: 'none', name: 'No Ranged Weapon' },
+      { id: 'javelin', name: 'Javelin (8")' },
+      { id: 'bow', name: 'Bow (18")' }
     ];
 
     /**********************
@@ -199,7 +193,7 @@
      **********************/
     const abilitiesList = {
       leader: { name: 'Leader', cost: 15 },
-      hero:   { name: 'Hero',   cost: 10 },
+      hero:   { name: 'Hero', cost: 10 },
       mighty: { name: 'Mighty', cost: 5 },
       tough:  { name: 'Tough', costMultiplier: 0.5 }
     };
@@ -257,7 +251,8 @@
       tbody.innerHTML = "";
       customUnits.forEach((unit, index) => {
         const tr = document.createElement("tr");
-        ["name", "move", "missile", "melee", "armor", "morale", "cost", "traits"].forEach(prop => {
+        // Display: Name, Movement, Missile, Melee, Armor, Morale, Cost
+        ["name", "move", "missile", "melee", "armor", "morale", "cost"].forEach(prop => {
           const td = document.createElement("td");
           td.textContent = unit[prop];
           tr.appendChild(td);
@@ -287,7 +282,7 @@
       return unit;
     }
 
-    // Always add a new row so you can assign different abilities.
+    // When adding a unit to the warband, we simply clone the selected unit.
     function addUnitToWarband() {
       const select = document.getElementById("unit-select");
       const quantityInput = document.getElementById("unit-quantity");
@@ -303,56 +298,41 @@
         return;
       }
       const newUnit = JSON.parse(JSON.stringify(unit));
-      if (parseInt(newUnit.move) >= 10) {
-        if (newUnit.traits) {
-          if (!newUnit.traits.toLowerCase().includes("mounted"))
-            newUnit.traits += newUnit.traits.trim() ? ", Mounted" : "Mounted";
-        } else {
-          newUnit.traits = "Mounted";
-        }
-      }
       warband.push({ unit: newUnit, quantity: quantity, abilities: newUnit.abilities || [] });
       updateWarbandDisplay();
     }
 
-    // Updated warband display with extra stat columns.
+    // Updated warband display (removed Traits column)
     function updateWarbandDisplay() {
       const tbody = document.querySelector("#warband-table tbody");
       tbody.innerHTML = "";
       let totalPoints = 0;
       warband.forEach((entry, index) => {
         const tr = document.createElement("tr");
-        
         // Unit Name
         let tdName = document.createElement("td");
         tdName.textContent = entry.unit.name;
         tr.appendChild(tdName);
-        
-        // Move
+        // Movement
         let tdMove = document.createElement("td");
         tdMove.textContent = entry.unit.move;
         tr.appendChild(tdMove);
-        
         // Missile
         let tdMissile = document.createElement("td");
         tdMissile.textContent = entry.unit.missile;
         tr.appendChild(tdMissile);
-        
         // Melee
         let tdMelee = document.createElement("td");
         tdMelee.textContent = entry.unit.melee;
         tr.appendChild(tdMelee);
-        
         // Armor
         let tdArmor = document.createElement("td");
         tdArmor.textContent = entry.unit.armor;
         tr.appendChild(tdArmor);
-        
         // Morale
         let tdMorale = document.createElement("td");
         tdMorale.textContent = entry.unit.morale;
         tr.appendChild(tdMorale);
-        
         // Quantity (input)
         let tdQty = document.createElement("td");
         let qtyInput = document.createElement("input");
@@ -367,32 +347,23 @@
         });
         tdQty.appendChild(qtyInput);
         tr.appendChild(tdQty);
-        
         // Base Cost
         let tdCost = document.createElement("td");
         tdCost.textContent = entry.unit.cost;
         tr.appendChild(tdCost);
-        
         // Abilities
         let tdAbilities = document.createElement("td");
         if (entry.abilities && entry.abilities.length > 0)
           tdAbilities.textContent = entry.abilities.map(a => `${a.name} (${a.cost})`).join(", ");
         else tdAbilities.textContent = "-";
         tr.appendChild(tdAbilities);
-        
-        // Traits
-        let tdTraits = document.createElement("td");
-        tdTraits.textContent = entry.unit.traits;
-        tr.appendChild(tdTraits);
-        
-        // Total Cost for this row
+        // Total cost for this row
         let abilitiesCost = (entry.abilities || []).reduce((sum, a) => sum + a.cost, 0);
         let lineTotal = (entry.unit.cost + abilitiesCost) * entry.quantity;
         totalPoints += lineTotal;
         let tdLineTotal = document.createElement("td");
         tdLineTotal.textContent = lineTotal;
         tr.appendChild(tdLineTotal);
-        
         // Actions
         let tdActions = document.createElement("td");
         let removeBtn = document.createElement("button");
@@ -405,7 +376,6 @@
         abilityBtn.onclick = () => { addAbilityToEntry(index); };
         tdActions.appendChild(abilityBtn);
         tr.appendChild(tdActions);
-        
         tbody.appendChild(tr);
       });
       document.getElementById("total-points").textContent = totalPoints;
@@ -451,44 +421,53 @@
       updateWarbandDisplay();
     }
 
+    /**********************
+     * CUSTOM UNIT CREATION FUNCTIONS
+     **********************/
     function populateCustomUnitDropdowns() {
+      // Movement
       const moveSelect = document.getElementById("custom-move-select");
-      openPointsOptions.movement.forEach(opt => {
+      movementOptions.forEach(opt => {
         const option = document.createElement("option");
         option.value = JSON.stringify(opt);
         option.textContent = `${opt.label} (Cost: ${opt.cost})`;
         moveSelect.appendChild(option);
       });
+      // Missile Type
       const missileTypeSelect = document.getElementById("custom-missile-type");
-      missileTypes.forEach(opt => {
+      missileTypeOptions.forEach(opt => {
         const option = document.createElement("option");
         option.value = JSON.stringify(opt);
         option.textContent = opt.name;
         missileTypeSelect.appendChild(option);
       });
-      const missileRatingSelect = document.getElementById("custom-missile-rating");
-      openPointsOptions.missile.forEach(opt => {
+      // Missile Score
+      const missileScoreSelect = document.getElementById("custom-missile-score");
+      missileOptions.forEach(opt => {
         const option = document.createElement("option");
         option.value = JSON.stringify(opt);
-        option.textContent = `${opt.label} (Cost: ${opt.cost})`;
-        missileRatingSelect.appendChild(option);
+        option.textContent = `Score ${opt.score} (Bow: ${opt.costBow} / Javelin: ${opt.costJavelin})`;
+        missileScoreSelect.appendChild(option);
       });
+      // Melee
       const meleeSelect = document.getElementById("custom-melee-select");
-      openPointsOptions.melee.forEach(opt => {
+      meleeOptions.forEach(opt => {
         const option = document.createElement("option");
         option.value = JSON.stringify(opt);
         option.textContent = `${opt.label} (Cost: ${opt.cost})`;
         meleeSelect.appendChild(option);
       });
+      // Armor
       const armorSelect = document.getElementById("custom-armor-select");
-      openPointsOptions.armor.forEach(opt => {
+      armorOptions.forEach(opt => {
         const option = document.createElement("option");
         option.value = JSON.stringify(opt);
         option.textContent = `${opt.label} (Cost: ${opt.cost})`;
         armorSelect.appendChild(option);
       });
+      // Morale
       const moraleSelect = document.getElementById("custom-morale-select");
-      openPointsOptions.morale.forEach(opt => {
+      moraleOptions.forEach(opt => {
         const option = document.createElement("option");
         option.value = JSON.stringify(opt);
         option.textContent = `${opt.label} (Cost: ${opt.cost})`;
@@ -496,15 +475,19 @@
       });
     }
 
+    // Compute the base cost for a custom unit.
     function recalcCustomUnitCost() {
       const moveOpt = JSON.parse(document.getElementById("custom-move-select").value);
+      // Missile: if type is "none", cost = 0; otherwise, cost depends on missile score and type.
       const missileTypeOpt = JSON.parse(document.getElementById("custom-missile-type").value);
+      const missileScoreOpt = JSON.parse(document.getElementById("custom-missile-score").value);
       let missileCost = 0;
-      if(missileTypeOpt.id === "none"){
+      if(missileTypeOpt.id === "none") {
         missileCost = 0;
-      } else {
-        const missileOpt = JSON.parse(document.getElementById("custom-missile-rating").value);
-        missileCost = missileOpt.cost + missileTypeOpt.costModifier;
+      } else if(missileTypeOpt.id === "bow") {
+        missileCost = missileScoreOpt.costBow;
+      } else if(missileTypeOpt.id === "javelin") {
+        missileCost = missileScoreOpt.costJavelin;
       }
       const meleeOpt = JSON.parse(document.getElementById("custom-melee-select").value);
       const armorOpt = JSON.parse(document.getElementById("custom-armor-select").value);
@@ -515,19 +498,9 @@
     }
 
     function attachCustomCostListeners() {
-      const ids = ["custom-move-select", "custom-missile-type", "custom-missile-rating", "custom-melee-select", "custom-armor-select", "custom-morale-select"];
+      const ids = ["custom-move-select", "custom-missile-type", "custom-missile-score", "custom-melee-select", "custom-armor-select", "custom-morale-select"];
       ids.forEach(id => {
         document.getElementById(id).addEventListener("change", recalcCustomUnitCost);
-      });
-      document.getElementById("custom-missile-type").addEventListener("change", function() {
-        const missileTypeOpt = JSON.parse(this.value);
-        const missileRatingSelect = document.getElementById("custom-missile-rating");
-        if(missileTypeOpt.id === "none"){
-          missileRatingSelect.disabled = true;
-        } else {
-          missileRatingSelect.disabled = false;
-        }
-        recalcCustomUnitCost();
       });
     }
 
@@ -539,17 +512,16 @@
       }
       const moveOpt = JSON.parse(document.getElementById("custom-move-select").value);
       const missileTypeOpt = JSON.parse(document.getElementById("custom-missile-type").value);
+      const missileScoreOpt = JSON.parse(document.getElementById("custom-missile-score").value);
       let missileText = "";
-      if(missileTypeOpt.id === "none"){
+      if(missileTypeOpt.id === "none") {
         missileText = "None";
       } else {
-        const missileOpt = JSON.parse(document.getElementById("custom-missile-rating").value);
-        missileText = missileTypeOpt.name + " " + missileOpt.label;
+        missileText = `${missileTypeOpt.name} Score ${missileScoreOpt.score}`;
       }
       const meleeOpt = JSON.parse(document.getElementById("custom-melee-select").value);
       const armorOpt = JSON.parse(document.getElementById("custom-armor-select").value);
       const moraleOpt = JSON.parse(document.getElementById("custom-morale-select").value);
-      let traits = document.getElementById("custom-traits").value.trim();
       let totalCost = recalcCustomUnitCost();
       const newId = "custom-" + Date.now();
       const newUnit = {
@@ -561,19 +533,17 @@
         armor: armorOpt.label,
         morale: moraleOpt.label,
         cost: totalCost,
-        traits,
-        abilities: []
+        abilities: []  // no traits field
       };
       customUnits.push(newUnit);
       updateCustomUnitsStorage();
       updateUnitDropdown();
       updateSavedCustomUnitsList();
       document.getElementById("custom-name").value = "";
-      document.getElementById("custom-traits").value = "";
-      ["custom-move-select","custom-missile-type","custom-missile-rating","custom-melee-select","custom-armor-select","custom-morale-select"].forEach(id => {
+      // Reset dropdowns to first option.
+      ["custom-move-select","custom-missile-type","custom-missile-score","custom-melee-select","custom-armor-select","custom-morale-select"].forEach(id => {
         document.getElementById(id).selectedIndex = 0;
       });
-      document.getElementById("custom-missile-rating").disabled = false;
       recalcCustomUnitCost();
       alert("Custom unit saved!");
     }
@@ -589,8 +559,8 @@
       doc.text("RavenFeast Army List", 105, y, { align: "center" });
       y += 10;
       doc.setFontSize(12);
-      // Build header for table with extra columns
-      let header = "Unit Name | Move | Missile | Melee | Armor | Morale | Quantity | Base Cost | Abilities | Traits | Total Cost";
+      // Build header for table (without Traits)
+      let header = "Unit Name | Move | Missile | Melee | Armor | Morale | Qty | Base Cost | Abilities | Total Cost";
       doc.text(header, 10, y);
       y += 6;
       let totalPoints = 0;
@@ -601,8 +571,7 @@
         let abilitiesText = (entry.abilities && entry.abilities.length > 0) 
           ? entry.abilities.map(a => `${a.name} (${a.cost})`).join(", ") 
           : "-";
-        // Construct a line including unit stats
-        let line = `${entry.unit.name} | ${entry.unit.move} | ${entry.unit.missile} | ${entry.unit.melee} | ${entry.unit.armor} | ${entry.unit.morale} | ${entry.quantity} | ${entry.unit.cost} | ${abilitiesText} | ${entry.unit.traits} | ${lineTotal}`;
+        let line = `${entry.unit.name} | ${entry.unit.move} | ${entry.unit.missile} | ${entry.unit.melee} | ${entry.unit.armor} | ${entry.unit.morale} | ${entry.quantity} | ${entry.unit.cost} | ${abilitiesText} | ${lineTotal}`;
         doc.text(line, 10, y);
         y += 6;
         if (y > 280) {
@@ -614,11 +583,11 @@
       // Collect unique ability IDs used
       let abilitiesUsed = new Set();
       warband.forEach(entry => {
-        if (entry.abilities && entry.abilities.length > 0) {
+        if(entry.abilities && entry.abilities.length > 0){
           entry.abilities.forEach(ab => abilitiesUsed.add(ab.id));
         }
       });
-      if (abilitiesUsed.size > 0) {
+      if(abilitiesUsed.size > 0) {
         doc.addPage();
         y = 10;
         doc.setFontSize(14);
@@ -626,7 +595,7 @@
         y += 10;
         doc.setFontSize(12);
         abilitiesUsed.forEach(abId => {
-          if (abilityDescriptions[abId]) {
+          if(abilityDescriptions[abId]) {
             let rule = abilityDescriptions[abId];
             let splitText = doc.splitTextToSize(rule, 180);
             doc.text(splitText, 10, y);
