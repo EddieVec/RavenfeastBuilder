@@ -18,8 +18,10 @@
     button { margin-top: 5px; }
     .ability-btn { margin-top: 2px; font-size: 0.9em; }
   </style>
-  <!-- Include jsPDF via CDN for PDF export -->
+  <!-- Include jsPDF via CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- Include jsPDF-AutoTable via CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
   <h1>RavenFeast Army Builder</h1>
@@ -36,7 +38,7 @@
     <button id="add-unit-btn">Add Unit</button>
     
     <h3>Warband Composition</h3>
-    <!-- Table header without Traits column -->
+    <!-- Table header (Traits column removed) -->
     <table id="warband-table">
       <thead>
         <tr>
@@ -124,7 +126,7 @@
     /**********************
      * PREDEFINED UNITS
      **********************/
-    // Only the Jarl has the Leader ability (preloaded) and Huskarls have Tough (2).
+    // Only the Jarl comes with the Leader ability (preloaded); Huskarl comes with Tough (2).
     const defaultUnits = [
       { id: 'default-1', name: 'Jarl', move: '6"', missile: 0, melee: 5, armor: 5, morale: 5, cost: 75,
         traits: 'Leader, Tough (3)',
@@ -414,7 +416,7 @@
       }
     }
 
-    // UPDATED: The prompt for adding extra abilities now excludes Leader.
+    // UPDATED: The optional abilities prompt now excludes "Leader"
     function addAbilityToEntry(index) {
       const entry = warband[index];
       const choice = prompt("Select ability to add:\n1) Hero (+10 pts)\n2) Mighty (+5 pts)\n3) Tough (extra wounds, cost = 50% of base cost per wound)").trim();
@@ -539,7 +541,6 @@
       const meleeOpt = JSON.parse(document.getElementById("custom-melee-select").value);
       const armorOpt = JSON.parse(document.getElementById("custom-armor-select").value);
       const moraleOpt = JSON.parse(document.getElementById("custom-morale-select").value);
-      // Traits input removed – no need to capture this value.
       let totalCost = recalcCustomUnitCost();
       const newId = "custom-" + Date.now();
       const newUnit = {
@@ -551,7 +552,7 @@
         armor: armorOpt.label,
         morale: moraleOpt.label,
         cost: totalCost,
-        // Omit traits property altogether.
+        // Traits are omitted.
         abilities: []
       };
       customUnits.push(newUnit);
@@ -559,7 +560,6 @@
       updateUnitDropdown();
       updateSavedCustomUnitsList();
       document.getElementById("custom-name").value = "";
-      // No traits input to clear.
       ["custom-move-select","custom-missile-type","custom-missile-rating","custom-melee-select","custom-armor-select","custom-morale-select"].forEach(id => {
         document.getElementById(id).selectedIndex = 0;
       });
@@ -574,59 +574,88 @@
     function exportArmyListToPDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
-      let y = 10;
+      // Title
       doc.setFontSize(16);
-      doc.text("RavenFeast Army List", 105, y, { align: "center" });
-      y += 10;
-      doc.setFontSize(12);
-      // Header without Traits column.
-      let header = "Unit Name | Move | Missile | Melee | Armor | Morale | Quantity | Base Cost | Abilities | Total Cost";
-      doc.text(header, 10, y);
-      y += 6;
-      let totalPoints = 0;
-      warband.forEach(entry => {
-        let abilitiesCost = (entry.abilities || []).reduce((sum, a) => sum + a.cost, 0);
-        let lineTotal = (entry.unit.cost + abilitiesCost) * entry.quantity;
-        totalPoints += lineTotal;
-        let abilitiesText = (entry.abilities && entry.abilities.length > 0) 
-          ? entry.abilities.map(a => `${a.name} (${a.cost})`).join(", ") 
-          : "-";
-        let line = `${entry.unit.name} | ${entry.unit.move} | ${entry.unit.missile} | ${entry.unit.melee} | ${entry.unit.armor} | ${entry.unit.morale} | ${entry.quantity} | ${entry.unit.cost} | ${abilitiesText} | ${lineTotal}`;
-        doc.text(line, 10, y);
-        y += 6;
-        if (y > 280) {
-          doc.addPage();
-          y = 10;
-        }
+      doc.text("RavenFeast Army List", doc.internal.pageSize.getWidth()/2, 10, { align: "center" });
+      
+      // Define columns for the table
+      const columns = [
+        { header: "Unit Name", dataKey: "unitName" },
+        { header: "Move", dataKey: "move" },
+        { header: "Missile", dataKey: "missile" },
+        { header: "Melee", dataKey: "melee" },
+        { header: "Armor", dataKey: "armor" },
+        { header: "Morale", dataKey: "morale" },
+        { header: "Quantity", dataKey: "quantity" },
+        { header: "Base Cost", dataKey: "baseCost" },
+        { header: "Abilities", dataKey: "abilities" },
+        { header: "Total Cost", dataKey: "totalCost" }
+      ];
+      
+      // Prepare rows from warband data
+      const rows = warband.map(entry => {
+        const abilitiesCost = (entry.abilities || []).reduce((sum, a) => sum + a.cost, 0);
+        const totalCost = (entry.unit.cost + abilitiesCost) * entry.quantity;
+        return {
+          unitName: entry.unit.name,
+          move: entry.unit.move,
+          missile: entry.unit.missile,
+          melee: entry.unit.melee,
+          armor: entry.unit.armor,
+          morale: entry.unit.morale,
+          quantity: entry.quantity,
+          baseCost: entry.unit.cost,
+          abilities: (entry.abilities && entry.abilities.length > 0)
+                     ? entry.abilities.map(a => `${a.name} (${a.cost})`).join(", ")
+                     : "-",
+          totalCost: totalCost
+        };
       });
-      doc.text(`Total Points: ${totalPoints}`, 10, y + 6);
+      
+      // Use jsPDF-AutoTable to generate a proper table.
+      doc.autoTable({
+        startY: 20,
+        head: [columns.map(col => col.header)],
+        body: rows.map(row => columns.map(col => row[col.dataKey])),
+        theme: 'grid',
+        headStyles: { fillColor: [200, 200, 200] },
+        styles: { fontSize: 10 },
+        margin: { left: 10, right: 10 }
+      });
+      
+      // Get the final y-position from the table.
+      let finalY = doc.autoTable.previous.finalY;
+      
+      // Place the Ability Rules title two line breaks below the table.
+      doc.setFontSize(12);
+      doc.text("Ability Rules", doc.internal.pageSize.getWidth()/2, finalY + 10, { align: "center" });
+      
       // Collect unique ability IDs used.
       let abilitiesUsed = new Set();
       warband.forEach(entry => {
-        if(entry.abilities && entry.abilities.length > 0){
+        if (entry.abilities && entry.abilities.length > 0) {
           entry.abilities.forEach(ab => abilitiesUsed.add(ab.id));
         }
       });
-      if(abilitiesUsed.size > 0) {
-        doc.addPage();
-        y = 10;
-        doc.setFontSize(14);
-        doc.text("Ability Rules", 105, y, { align: "center" });
-        y += 10;
-        doc.setFontSize(12);
-        abilitiesUsed.forEach(abId => {
-          if(abilityDescriptions[abId]) {
-            let rule = abilityDescriptions[abId];
-            let splitText = doc.splitTextToSize(rule, 180);
-            doc.text(splitText, 10, y);
-            y += splitText.length * 6 + 4;
-            if (y > 280) {
-              doc.addPage();
-              y = 10;
-            }
-          }
-        });
-      }
+      
+      // Write the ability rules below the table (on the same page).
+      let currentY = finalY + 16;
+      abilitiesUsed.forEach(abId => {
+        if (abilityDescriptions[abId]) {
+          let rule = abilityDescriptions[abId];
+          let splitText = doc.splitTextToSize(rule, doc.internal.pageSize.getWidth() - 20);
+          doc.text(splitText, 10, currentY);
+          currentY += splitText.length * 6 + 4;
+        }
+      });
+      
+      // Finally, add the Total Points summary a couple of line breaks below.
+      let totalPoints = warband.reduce((acc, entry) => {
+        const abilitiesCost = (entry.abilities || []).reduce((sum, a) => sum + a.cost, 0);
+        return acc + (entry.unit.cost + abilitiesCost) * entry.quantity;
+      }, 0);
+      doc.text(`Total Points: ${totalPoints}`, 10, currentY + 10);
+      
       doc.save("army-list.pdf");
     }
 
